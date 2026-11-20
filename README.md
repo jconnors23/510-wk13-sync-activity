@@ -1,7 +1,8 @@
 ---
-title: Semantic Search Engine
+title: nfl-draft-search-2025
 sdk: gradio
 app_file: app.py
+short_description: Semantic search of 2025 NFL draft, data sourced via nflverse
 ---
 
 # Semantic search engine
