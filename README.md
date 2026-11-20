@@ -9,6 +9,10 @@ short_description: Semantic search of 2025 NFL draft, data sourced via nflverse
 
 Search the 2025 NFL draft by meaning. The app embeds a question with MiniLM, looks up the nearest picks in Chroma, and shows them in Gradio.
 
+Hugging Face Space: https://huggingface.co/spaces/jconnors23/nfl-draft-search-2025
+
+App: https://jconnors23-nfl-draft-search-2025.hf.space
+
 The dataset is the 2025 season from nflverse, 257 picks. The file itself is every draft since 1980. This project keeps `season == 2025`.
 
 nflverse: https://github.com/nflverse/nflverse

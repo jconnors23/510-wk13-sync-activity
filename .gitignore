@@ -1,12 +1,6 @@
-# Local Python environment. Do not upload this.
 .venv/
-
-# Bytecode and test caches. Safe to delete. Python recreates them.
 __pycache__/
 .pytest_cache/
-
-# macOS folder metadata.
 .DS_Store
 
-# Do not ignore chromadb/ or data/.
-# chromadb/ is the saved search index. data/ is the raw and cleaned draft tables.
+# Keep chromadb/ and data/. Those are the index and the draft tables.

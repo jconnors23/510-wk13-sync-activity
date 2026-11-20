@@ -1,10 +1,7 @@
-# Search app and the build script.
-# Used to embed text, store vectors, and serve the search page.
 chromadb
 gradio
 sentence-transformers
 
-# Build script only. They download and read the nflverse draft table.
-# app.py does not import them, but a Space that reruns the build script needs them.
+# Build script only. The running app does not import these.
 nflreadpy
 polars
