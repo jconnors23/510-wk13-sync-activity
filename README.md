@@ -1,93 +1,69 @@
 ---
 title: nfl-draft-search-2025
 sdk: gradio
+sdk_version: 6.32.0
+python_version: "3.13"
 app_file: app.py
 short_description: Semantic search of 2025 NFL draft, data sourced via nflverse
 ---
 
-# Semantic search engine
+# Semantic Search Engine for the 2025 NFL Draft
 
-Search the 2025 NFL draft by meaning. The app embeds a question with MiniLM, looks up the nearest picks in Chroma, and shows them in Gradio.
+This project is a search page for the 2025 NFL draft (**257** picks). You type a question such as "quarterback". The page returns the five picks whose one-sentence descriptions are closest in meaning, even when the words differ. It is built with the MiniLM embedding model, the Chroma vector database, and Gradio, and it is published as a Hugging Face Space. The terms are defined in the [glossary](docs/index.md#glossary).
 
-Hugging Face Space: https://huggingface.co/spaces/jconnors23/nfl-draft-search-2025
-
-App: https://jconnors23-nfl-draft-search-2025.hf.space
-
-The dataset is the 2025 season from nflverse, 257 picks. The file itself is every draft since 1980. This project keeps `season == 2025`.
-
-nflverse: https://github.com/nflverse/nflverse
-
-Exact file: https://github.com/nflverse/nflverse-data/releases/download/draft_picks/draft_picks.parquet
+- Space page: https://huggingface.co/spaces/jconnors23/nfl-draft-search-2025
+- Direct app address: https://jconnors23-nfl-draft-search-2025.hf.space
 
 ## Contents
 
 | Section | What it covers |
 | --- | --- |
-| [Architecture](#architecture) | How the draft, the build, Chroma, and the app connect |
-| [Glossary](#glossary) | Terms used in this project |
-| [Data](#data) | Raw table and cleaned sentences |
-| [Run](#run) | Install, build the index, open the app |
-| [Design manifest](#design-manifest) | How Cursor was used |
+| [Architecture](#architecture) | How the data, the build, the database, and the app connect |
+| [Data](#data) | Where the data comes from and which files hold it |
+| [Run](#run) | Install, start the app, rebuild the database |
+| [Where to Read Next](#where-to-read-next) | The documentation pages, in reading order |
+| [How This Project Was Built](#how-this-project-was-built) | Which tool did which part |
 
 ## Architecture
 
 ```mermaid
-flowchart LR
-  nfl["nflverse 2025 draft"] --> build["build-draft-index.py"]
-  build --> chroma["chromadb"]
-  chroma --> app["app.py"]
+flowchart TB
+  nfl["nflverse draft table (all seasons since 1980)"] -->|"keep season 2025"| build["scripts/build-draft-index.py"]
   config["draft_search_settings.py"] --> build
   config --> app
-  walk["notebooks/draft-search-walkthrough.ipynb"] -.-> build
-  walk -.-> app
-  nfl --> raw["data/raw"]
-  build --> processed["data/processed"]
+  build -->|"257 sentences and their embeddings"| chroma["chromadb/ (database)"]
+  chroma --> app["app.py (search page)"]
+  app -->|"upload with hf"| space["Hugging Face Space"]
+  raw["data/raw CSV (saved copy, no script writes it)"] -->|"read by"| nb["notebooks/draft-search-walkthrough.ipynb (same steps, in cells)"]
+  nb -->|"writes"| processed["data/processed CSV"]
 ```
 
-| Piece | What it is |
-| --- | --- |
-| `data/raw` | The nflverse draft table, unchanged |
-| `scripts/build-draft-index.py` | Turns each pick into a sentence, embeds it, writes Chroma |
-| `data/processed` | Those sentences, saved so the cleaned text is visible |
-| `chromadb` | The vector database the app searches |
-| `app.py` | The search page. It embeds the question and reads `chromadb` |
-| `draft_search_settings.py` | Shared settings for the build script and the app: model, database folder, collection name, result count, and draft year |
-| `notebooks/semantic_search_starter_notebook.ipynb` | Starter notebook: three toy sentences and an in-memory Chroma client |
-| `notebooks/draft-search-walkthrough.ipynb` | The same steps as the build script and `app.py`, in notebook cells |
-
-## Glossary
-
-Terms used in this project.
-
-| Term | Meaning |
-| --- | --- |
-| Dataset | The records you search. Here, the 2025 nflverse draft, 257 picks. |
-| nflverse | The NFL data project at https://github.com/nflverse/nflverse. This app uses https://github.com/nflverse/nflverse-data/releases/download/draft_picks/draft_picks.parquet. |
-| Chunk | The piece of text stored for one result. Here, one sentence per draft pick. |
-| Embed | Turn text into a list of numbers with a model, so similar meanings land near each other. |
-| Embedding | The list of numbers for one sentence. This model uses 384 numbers. |
-| MiniLM | The embedding model, `sentence-transformers/all-MiniLM-L6-v2`. The same model must build the index and answer the query. |
-| Vector | One embedding. Chroma stores a vector for every chunk. |
-| Vector database | A store built to find the nearest vectors. This project uses Chroma. |
-| Chroma | The vector database. The saved copy is `chromadb/chroma.sqlite3`. |
-| Collection | A named set of vectors inside Chroma. This one is `draft_2025`. |
-| Cosine distance | How Chroma scores a match. Smaller means the query and the pick are closer in meaning. |
-| Semantic search | Search by meaning. The query does not have to reuse the exact words in the sentence. |
-| Gradio | The search page. One text box in, the nearest picks out. |
-| Hugging Face Spaces | The host for the published app. `README.md` starts with the Space settings. |
+```text
+.
+├── README.md                      Space settings and this overview
+├── app.py                         The search page
+├── draft_search_settings.py       Settings shared by the build and the app
+├── requirements.txt               Pinned packages
+├── scripts/
+│   └── build-draft-index.py       Builds chromadb/ from the nflverse download
+├── chromadb/                      The saved database the app reads
+├── data/
+│   ├── raw/draft-picks-2025.csv   The 2025 rows of the nflverse table, 36 columns
+│   └── processed/indexed-draft-sentences-2025.csv   The 257 embedded sentences
+├── notebooks/
+│   └── draft-search-walkthrough.ipynb   The same steps, one cell at a time
+└── docs/                          The documentation pages
+```
 
 ## Data
 
-`data/` holds the exact tables this project used. The raw file is the nflverse download. The processed file is the cleaned text that was embedded.
+The data is the NFL draft table from nflverse (https://github.com/nflverse/nflverse), downloaded from https://github.com/nflverse/nflverse-data/releases/download/draft_picks/draft_picks.parquet. The file covers every draft since 1980. This project keeps the 2025 season, 257 picks. The nflverse-data repository is published under the CC-BY-4.0 licence, according to its GitHub page, and this project credits nflverse as the source.
 
-| File | What it is |
-| --- | --- |
-| `data/raw/draft-picks-2025.csv` | The 2025 rows from https://github.com/nflverse/nflverse-data/releases/download/draft_picks/draft_picks.parquet, 257 picks, as loaded by `load_draft_picks(2025)`. Position values are still short codes such as `QB`. |
-| `data/processed/indexed-draft-sentences-2025.csv` | One sentence per pick, after the codes were written out (`QB` becomes `quarterback`), empty names and colleges were filled, and round numbers were written as words. These sentences are what Chroma stores. |
-
-`chromadb/chroma.sqlite3` is that sentence file embedded and saved. The app reads the database. It does not read the CSV files at search time.
+The app reads only `chromadb/`. It does not read the CSV files. For what each file holds, and a reference for every column, see [Build the Search Index](docs/build-the-index.md#data-files-and-column-reference).
 
 ## Run
+
+You need Python 3.13 and internet access on the first run. Requirements, expected output, and publishing steps are in [How to Run and Publish](docs/how-to-run.md).
 
 ```bash
 python -m venv .venv
@@ -102,17 +78,29 @@ pip install -r requirements.txt
 ```
 
 ```bash
-python scripts/build-draft-index.py
-```
-
-```bash
 python app.py
 ```
 
-The build script only needs to run again if `draft_search_settings.py` changes. That file holds the model name, database folder, collection name, result count, and draft year.
+The repository already contains a built database, so the app starts without a build. The page opens at http://127.0.0.1:7860. Rebuild after changing the model name, database folder, collection name, or draft year in `draft_search_settings.py`. `N_RESULTS` does not need a rebuild. Stop the app first, then run:
 
-Try the examples in the search box: quarterback, wide receiver, kicker, defensive end. A smaller distance is a closer match.
+```bash
+python scripts/build-draft-index.py
+```
 
-## Design manifest
+## Where to Read Next
 
-This project was built with AI-driven development via Cursor, which was used for drafting scripts, data cleaning, the app, config, docs, and the saved search index.
+| Page | What it covers |
+| --- | --- |
+| [Project Overview](docs/index.md) | The five steps, the data source, the file reference, and the glossary |
+| [Build the Search Index](docs/build-the-index.md) | How each pick becomes a sentence and an embedding, and the column reference |
+| [Search App and Hugging Face Space](docs/search-app-and-space.md) | How a search works and how the Space starts |
+| [How to Run and Publish](docs/how-to-run.md) | Requirements, commands, expected output, and the upload steps |
+| [Example Searches](docs/example-searches.md) | Real results, including searches that work poorly |
+| [Conclusions](docs/conclusions.md) | What the search does well, what it does not do, and how to extend it |
+
+## How This Project Was Built
+
+| Stage | Tool | What it handled |
+| --- | --- | --- |
+| Code and configuration | Cursor | The build script, the app, the settings file, `requirements.txt`, the walkthrough notebook's code, the data cleaning, and the saved search index |
+| Comments and documentation | Kiro | The code comments, this README, and the pages in `docs/` |

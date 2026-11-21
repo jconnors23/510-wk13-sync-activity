@@ -1,6 +1,13 @@
+# Local environment and caches. Git does not track these.
 .venv/
 __pycache__/
 .pytest_cache/
 .DS_Store
 
-# Keep chromadb/ and data/. Those are the index and the draft tables.
+# Local notes and secrets. Never commit or upload these.
+local/
+local-docs/
+hf_tok.txt
+
+# chromadb/ and data/ are kept in git on purpose. The Hugging Face Space
+# uploads this folder, and app.py needs the finished database in chromadb/.

@@ -1,4 +1,7 @@
-# Gradio search over the saved Chroma index. Run the build script first.
+# Search page for the 2025 NFL draft. It takes a typed question, finds the
+# five draft picks whose sentences are closest in meaning, and shows them.
+# This file only reads the database. Create it first with:
+#   python scripts/build-draft-index.py
 
 import chromadb
 import gradio as gr
@@ -7,10 +10,12 @@ from sentence_transformers import SentenceTransformer
 
 import draft_search_settings as settings
 
-# Same model the build script used.
+# Load the same embedding model the build script used. Numbers from two
+# different models cannot be compared, so the distances would be wrong.
 model = SentenceTransformer(settings.MODEL_NAME)
 
-# Read the saved index. Do not rebuild it here.
+# Open the database folder made by the build script. If the folder or the
+# collection is missing, get_collection fails. This file never creates it.
 client = chromadb.PersistentClient(
     path=str(settings.DB_DIR),
     settings=Settings(anonymized_telemetry=False),
@@ -23,8 +28,12 @@ def semantic_search(query):
     if not query:
         return "Type a search, such as: quarterback."
 
-    # Same normalize flag as the build, so the vectors can be compared.
+    # Scale the question's embedding to length 1, the same way the build
+    # script scaled the sentence embeddings. Keep this setting identical in both files.
     query_embedding = model.encode([query], normalize_embeddings=True)
+    # Ask Chroma for the N_RESULTS closest sentences (set in
+    # draft_search_settings.py). Distance is 0 for the same meaning and grows
+    # as the meaning differs, so a smaller number is a better match.
     results = collection.query(
         query_embeddings=query_embedding.tolist(),
         n_results=settings.N_RESULTS,
@@ -38,6 +47,9 @@ def semantic_search(query):
     return "\n\n".join(lines)
 
 
+# Build the page: one input box, one output box, and four example questions
+# a visitor can click. The "if __name__" check at the bottom starts the web
+# server only when you run `python app.py`, not when another file imports this one.
 demo = gr.Interface(
     fn=semantic_search,
     inputs=gr.Textbox(label="Enter your search query"),

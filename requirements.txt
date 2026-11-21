@@ -1,7 +1,10 @@
-chromadb
-gradio
-sentence-transformers
+# Tested with Python 3.13. Versions are the ones installed in .venv.
+# App and build script
+chromadb==1.5.9                  # vector database
+gradio==6.32.0                   # search page
+sentence-transformers==6.3.0     # embedding model
 
-# Build script only. The running app does not import these.
-nflreadpy
-polars
+# Build script only. app.py does not import these, but the Hugging Face
+# Space still installs them because it reads this whole file.
+nflreadpy==0.1.5                 # downloads the draft table
+polars==2.1.0                    # table library nflreadpy returns
